@@ -207,7 +207,7 @@ function badgeClass(t) {
 
 async function loadDpgs() {
   try {
-    const res = await fetch("https://api.digitalpublicgoods.net/dpgs");
+    const res = await fetch("https://api.digitalpublicgoods.net/dpgs/", {redirect: "follow"});
     if (!res.ok) throw new Error("API error");
     const data = await res.json();
     allDpgs = Array.isArray(data) ? data : (data.data || data.dpgs || []);
