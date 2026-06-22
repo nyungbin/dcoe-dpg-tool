@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DCOE · DPG Curation Tool</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f8f8f6;
+    --surface: #ffffff;
+    --border: #e4e2dc;
+    --border-mid: #ccc9c0;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6860;
+    --text-tertiary: #9e9c96;
+    --teal-50: #e1f5ee;
+    --teal-600: #0f6e56;
+    --teal-700: #085041;
+    --blue-50: #e6f1fb;
+    --blue-600: #185fa5;
+    --blue-800: #0c447c;
+    --amber-50: #faeeda;
+    --amber-600: #854f0b;
+    --purple-50: #eeedfe;
+    --purple-600: #534ab7;
+    --coral-50: #faece7;
+    --coral-600: #993c1d;
+    --green-50: #eaf3de;
+    --green-700: #27500a;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+  .app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--surface); border-right: 0.5px solid var(--border); padding: 1.5rem 1.25rem; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .main { padding: 1.5rem 2rem; }
+  .logo { font-size: 11px; letter-spacing: 0.08em; color: var(--text-tertiary); margin-bottom: 1.75rem; font-weight: 500; }
+  .logo span { color: var(--teal-600); }
+  .filter-section { margin-bottom: 1.5rem; }
+  .filter-title { font-size: 11px; font-weight: 500; color: var(--text-tertiary); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.6rem; }
+  .filter-option { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; color: var(--text-secondary); transition: background 0.1s; margin-bottom: 2px; user-select: none; }
+  .filter-option:hover { background: var(--bg); }
+  .filter-option.active { background: var(--teal-50); color: var(--teal-700); font-weight: 500; }
+  .filter-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .filter-check { width: 14px; height: 14px; border: 1px solid var(--border-mid); border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+  .filter-option.active .filter-check { background: var(--teal-600); border-color: var(--teal-600); color: white; }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.25rem 0; }
+  .clear-btn { font-size: 11px; color: var(--teal-600); cursor: pointer; background: none; border: none; padding: 0; margin-top: 0.75rem; display: block; }
+  .clear-btn:hover { text-decoration: underline; }
+  .main-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.25rem; }
+  .main-title { font-size: 18px; font-weight: 500; }
+  .result-meta { font-size: 12px; color: var(--text-tertiary); }
+  .search-wrap { position: relative; margin-bottom: 1.25rem; }
+  .search-input { width: 100%; padding: 8px 12px 8px 36px; border: 0.5px solid var(--border-mid); border-radius: var(--radius-md); background: var(--surface); font-size: 13px; color: var(--text-primary); outline: none; transition: border-color 0.15s; }
+  .search-input:focus { border-color: var(--teal-600); }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); font-size: 14px; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; cursor: pointer; transition: border-color 0.15s; }
+  .card:hover { border-color: var(--border-mid); }
+  .card.selected { border: 1.5px solid var(--teal-600); }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; gap: 8px; }
+  .card-name { font-size: 14px; font-weight: 500; }
+  .badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; flex-shrink: 0; white-space: nowrap; }
+  .badge-software { background: var(--purple-50); color: var(--purple-600); }
+  .badge-data { background: var(--blue-50); color: var(--blue-800); }
+  .badge-content { background: var(--amber-50); color: var(--amber-600); }
+  .badge-ai { background: var(--coral-50); color: var(--coral-600); }
+  .badge-standard { background: var(--green-50); color: var(--green-700); }
+  .card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+  .tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; }
+  .tag-sdg { background: var(--teal-50); color: var(--teal-700); }
+  .tag-country { background: var(--blue-50); color: var(--blue-800); }
+  .card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 0.5px solid var(--border); padding-top: 8px; }
+  .dpg-link { font-size: 11px; color: var(--blue-600); text-decoration: none; }
+  .dpg-link:hover { text-decoration: underline; }
+  .card-country { font-size: 11px; color: var(--text-tertiary); }
+  .loading { padding: 4rem; text-align: center; color: var(--text-tertiary); font-size: 13px; grid-column: 1 / -1; }
+  .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--teal-600); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error { padding: 3rem; text-align: center; color: var(--coral-600); font-size: 13px; grid-column: 1 / -1; }
+  .empty { padding: 3rem; text-align: center; color: var(--text-tertiary); font-size: 13px; grid-column: 1 / -1; }
+  .detail-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.15); z-index: 100; }
+  .detail-overlay.open { display: block; }
+  .detail-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 480px; background: var(--surface); border-left: 0.5px solid var(--border); overflow-y: auto; z-index: 101; transform: translateX(100%); transition: transform 0.2s ease; }
+  .detail-panel.open { transform: translateX(0); }
+  .detail-inner { padding: 1.5rem; }
+  .detail-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem; }
+  .detail-name { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+  .detail-sub { font-size: 12px; color: var(--text-secondary); }
+  .close-btn { background: none; border: 0.5px solid var(--border-mid); border-radius: var(--radius-sm); padding: 5px 12px; font-size: 12px; cursor: pointer; color: var(--text-secondary); flex-shrink: 0; }
+  .close-btn:hover { background: var(--bg); }
+  .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem; }
+  .metric { background: var(--bg); border-radius: var(--radius-md); padding: 10px 12px; }
+  .metric-label { font-size: 11px; color: var(--text-tertiary); margin-bottom: 3px; }
+  .metric-value { font-size: 13px; font-weight: 500; }
+  .section-title { font-size: 11px; font-weight: 500; color: var(--text-tertiary); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.75rem; }
+  .sdg-list { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .sdg-tag { font-size: 11px; padding: 3px 10px; border-radius: 10px; background: var(--teal-50); color: var(--teal-700); }
+  .detail-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.25rem; }
+  .dpga-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--blue-600); text-decoration: none; border: 0.5px solid var(--border-mid); border-radius: var(--radius-sm); padding: 5px 12px; margin-top: 0.5rem; }
+  .dpga-link:hover { background: var(--bg); }
+  .note-box { background: var(--amber-50); border-radius: var(--radius-md); padding: 10px 12px; font-size: 12px; color: var(--amber-600); line-height: 1.5; margin-top: 1rem; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <p class="logo">DCOE · <span>DPG Curation Tool</span></p>
+
+    <div class="filter-section">
+      <p class="filter-title">Type</p>
+      <div class="filter-option active" data-filter="type" data-value="all"><span class="filter-check">✓</span> All types</div>
+      <div class="filter-option" data-filter="type" data-value="software"><span class="filter-check"></span> Software</div>
+      <div class="filter-option" data-filter="type" data-value="data"><span class="filter-check"></span> Open data</div>
+      <div class="filter-option" data-filter="type" data-value="content"><span class="filter-check"></span> Open content</div>
+      <div class="filter-option" data-filter="type" data-value="ai_model"><span class="filter-check"></span> AI system</div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="filter-section">
+      <p class="filter-title">SDG relevance</p>
+      <div class="filter-option active" data-filter="sdg" data-value="all"><span class="filter-check">✓</span> All SDGs</div>
+      <div class="filter-option" data-filter="sdg" data-value="SDG3"><span class="filter-dot" style="background:#1d9e75"></span> SDG 3 — Good health</div>
+      <div class="filter-option" data-filter="sdg" data-value="SDG4"><span class="filter-dot" style="background:#378add"></span> SDG 4 — Education</div>
+      <div class="filter-option" data-filter="sdg" data-value="SDG5"><span class="filter-dot" style="background:#d4537e"></span> SDG 5 — Gender equality</div>
+      <div class="filter-option" data-filter="sdg" data-value="SDG10"><span class="filter-dot" style="background:#534ab7"></span> SDG 10 — Reduced inequalities</div>
+      <div class="filter-option" data-filter="sdg" data-value="SDG16"><span class="filter-dot" style="background:#854f0b"></span> SDG 16 — Peace & justice</div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="filter-section">
+      <p class="filter-title">Origin country</p>
+      <div class="filter-option active" data-filter="country" data-value="all"><span class="filter-check">✓</span> All countries</div>
+      <div id="country-filters"></div>
+    </div>
+
+    <button class="clear-btn" id="clear-all">Reset all filters</button>
+  </aside>
+
+  <main class="main">
+    <div class="main-header">
+      <div>
+        <p class="result-meta" style="margin-bottom:4px;">Live data from DPG Registry · digitalpublicgoods.net</p>
+        <h1 class="main-title">Digital Public Goods</h1>
+      </div>
+      <p class="result-meta" id="result-count"></p>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" type="text" id="search" placeholder="Search by name or description...">
+    </div>
+
+    <div class="card-grid" id="card-grid">
+      <div class="loading"><div class="loading-spinner"></div><br>Loading DPG Registry...</div>
+    </div>
+  </main>
+</div>
+
+<div class="detail-overlay" id="overlay"></div>
+<div class="detail-panel" id="detail-panel">
+  <div class="detail-inner">
+    <div class="detail-top">
+      <div>
+        <p class="detail-name" id="d-name"></p>
+        <p class="detail-sub" id="d-sub"></p>
+      </div>
+      <button class="close-btn" id="close-btn">Close ✕</button>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric"><p class="metric-label">Type</p><p class="metric-value" id="d-type"></p></div>
+      <div class="metric"><p class="metric-label">Origin</p><p class="metric-value" id="d-country"></p></div>
+      <div class="metric"><p class="metric-label">License</p><p class="metric-value" id="d-license"></p></div>
+      <div class="metric"><p class="metric-label">SDGs</p><p class="metric-value" id="d-sdg-count"></p></div>
+    </div>
+    <p class="section-title">Description</p>
+    <p class="detail-desc" id="d-desc"></p>
+    <p class="section-title">SDG relevance</p>
+    <div class="sdg-list" id="d-sdgs"></div>
+    <div class="note-box">
+      ⚠ Field experience data (UNICEF deployment regions, pilot status) is not yet available in the public DPG Registry. This layer would be maintained by DCOE staff based on country office reporting.
+    </div>
+    <a class="dpga-link" id="d-link" href="#" target="_blank">↗ View on DPG Registry</a>
+  </div>
+</div>
+
+<script>
+let allDpgs = [];
+let filters = { type: "all", sdg: "all", country: "all" };
+let searchQuery = "";
+let selectedId = null;
+
+function typeLabel(t) {
+  const map = { software: "Software", data: "Open data", content: "Open content", ai_model: "AI system", standard: "Standard" };
+  return map[t] || t;
+}
+function badgeClass(t) {
+  const map = { software: "badge-software", data: "badge-data", content: "badge-content", ai_model: "badge-ai", standard: "badge-standard" };
+  return map[t] || "badge-software";
+}
+
+async function loadDpgs() {
+  try {
+    const res = await fetch("https://api.digitalpublicgoods.net/dpgs");
+    if (!res.ok) throw new Error("API error");
+    const data = await res.json();
+    allDpgs = Array.isArray(data) ? data : (data.data || data.dpgs || []);
+    buildCountryFilters();
+    renderCards();
+  } catch (e) {
+    document.getElementById("card-grid").innerHTML = '<p class="error">Could not load DPG Registry. Please check your internet connection and refresh.</p>';
+  }
+}
+
+function buildCountryFilters() {
+  const countries = [...new Set(allDpgs.map(d => d.locations?.country || d.country || "").filter(Boolean))].sort();
+  const top = ["India", "United States", "Kenya", "Uganda", "Nigeria", "Bangladesh", "South Africa"];
+  const shown = top.filter(c => countries.includes(c));
+  const wrap = document.getElementById("country-filters");
+  wrap.innerHTML = shown.map(c => `
+    <div class="filter-option" data-filter="country" data-value="${c}">
+      <span class="filter-check"></span> ${c}
+    </div>
+  `).join("");
+  wrap.querySelectorAll(".filter-option").forEach(el => {
+    el.addEventListener("click", () => handleFilter(el));
+  });
+}
+
+function getSdgs(d) {
+  if (Array.isArray(d.sdgs)) return d.sdgs.map(s => typeof s === "string" ? s : s.id || s.sdg || "").filter(Boolean);
+  if (typeof d.sdgs === "string") return d.sdgs.split(",").map(s => s.trim()).filter(Boolean);
+  return [];
+}
+
+function getCountry(d) {
+  return d.locations?.country || d.country || d.origin || "";
+}
+
+function getType(d) {
+  return (d.type || d.category || "software").toLowerCase().replace(/\s+/g, "_");
+}
+
+function filtered() {
+  return allDpgs.filter(d => {
+    const sdgs = getSdgs(d);
+    const country = getCountry(d);
+    const type = getType(d);
+    if (filters.type !== "all" && !type.includes(filters.type)) return false;
+    if (filters.sdg !== "all" && !sdgs.some(s => s.toUpperCase().includes(filters.sdg.replace("SDG", "")))) return false;
+    if (filters.country !== "all" && country !== filters.country) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const name = (d.name || "").toLowerCase();
+      const desc = (d.description || "").toLowerCase();
+      if (!name.includes(q) && !desc.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderCards() {
+  const list = filtered();
+  document.getElementById("result-count").textContent = list.length + " of " + allDpgs.length + " solutions";
+  const grid = document.getElementById("card-grid");
+  if (!list.length) {
+    grid.innerHTML = '<p class="empty">No solutions match the selected filters.</p>';
+    return;
+  }
+  grid.innerHTML = list.map(d => {
+    const sdgs = getSdgs(d);
+    const country = getCountry(d);
+    const type = getType(d);
+    const desc = d.description || "";
+    return `
+      <div class="card${selectedId === d.id ? ' selected' : ''}" data-id="${d.id}">
+        <div class="card-head">
+          <span class="card-name">${d.name || ""}</span>
+          <span class="badge ${badgeClass(type)}">${typeLabel(type)}</span>
+        </div>
+        <p class="card-desc">${desc}</p>
+        <div class="card-tags">
+          ${sdgs.slice(0, 3).map(s => `<span class="tag tag-sdg">SDG ${s}</span>`).join("")}
+          ${country ? `<span class="tag tag-country">${country}</span>` : ""}
+        </div>
+        <div class="card-footer">
+          <a class="dpg-link" href="https://digitalpublicgoods.net/r/${d.id}" target="_blank" onclick="event.stopPropagation()">↗ DPG Registry</a>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  grid.querySelectorAll(".card").forEach(el => {
+    el.addEventListener("click", () => {
+      const id = el.dataset.id;
+      selectedId = id;
+      renderCards();
+      openDetail(id);
+    });
+  });
+}
+
+function openDetail(id) {
+  const d = allDpgs.find(x => x.id === id);
+  if (!d) return;
+  const sdgs = getSdgs(d);
+  const country = getCountry(d);
+  const type = getType(d);
+  document.getElementById("d-name").textContent = d.name || "";
+  document.getElementById("d-sub").textContent = typeLabel(type);
+  document.getElementById("d-type").textContent = typeLabel(type);
+  document.getElementById("d-country").textContent = country || "—";
+  document.getElementById("d-license").textContent = d.license || d.licenseURL || "Open source";
+  document.getElementById("d-sdg-count").textContent = sdgs.length + " SDGs";
+  document.getElementById("d-desc").textContent = d.description || "No description available.";
+  document.getElementById("d-sdgs").innerHTML = sdgs.map(s => `<span class="sdg-tag">SDG ${s}</span>`).join("");
+  document.getElementById("d-link").href = "https://digitalpublicgoods.net/r/" + d.id;
+  document.getElementById("detail-panel").classList.add("open");
+  document.getElementById("overlay").classList.add("open");
+}
+
+function closeDetail() {
+  selectedId = null;
+  document.getElementById("detail-panel").classList.remove("open");
+  document.getElementById("overlay").classList.remove("open");
+  renderCards();
+}
+
+function handleFilter(el) {
+  const f = el.dataset.filter;
+  const v = el.dataset.value;
+  filters[f] = v;
+  document.querySelectorAll(`.filter-option[data-filter="${f}"]`).forEach(opt => {
+    opt.classList.remove("active");
+    const chk = opt.querySelector(".filter-check");
+    if (chk) chk.textContent = "";
+  });
+  el.classList.add("active");
+  const chk = el.querySelector(".filter-check");
+  if (chk) chk.textContent = "✓";
+  renderCards();
+}
+
+document.querySelectorAll(".filter-option[data-filter]").forEach(el => {
+  el.addEventListener("click", () => handleFilter(el));
+});
+
+document.getElementById("search").addEventListener("input", e => {
+  searchQuery = e.target.value.toLowerCase().trim();
+  renderCards();
+});
+
+document.getElementById("close-btn").addEventListener("click", closeDetail);
+document.getElementById("overlay").addEventListener("click", closeDetail);
+
+document.getElementById("clear-all").addEventListener("click", () => {
+  filters = { type: "all", sdg: "all", country: "all" };
+  searchQuery = "";
+  document.getElementById("search").value = "";
+  document.querySelectorAll(".filter-option").forEach(el => {
+    el.classList.remove("active");
+    const chk = el.querySelector(".filter-check");
+    if (chk) chk.textContent = "";
+  });
+  document.querySelectorAll(".filter-option[data-value='all']").forEach(el => {
+    el.classList.add("active");
+    const chk = el.querySelector(".filter-check");
+    if (chk) chk.textContent = "✓";
+  });
+  renderCards();
+});
+
+loadDpgs();
+</script>
+</body>
+</html>
